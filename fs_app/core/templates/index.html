@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen p-6">
+    <button onclick="logout()" class="ml-[90%] bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+
+    <h1 class="text-3xl font-bold text-center mb-6">Welcome to the File Portal</h1>
+
+    <div id="role" class="text-center text-xl mb-4 text-blue-700"></div>
+    <div id="load" class="hidden text-center text-gray-600 text-sm">Loading...</div>
+
+    <div id="upSec" class="hidden mb-8 max-w-md mx-auto bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-bold mb-2">Upload File</h2>
+      <form id="upForm">
+        <input accept=".docx,.pptx,.xlsx" type="file" name="file" required class="mb-4" />
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Upload</button>
+      </form>
+      <p id="upMsg" class="mt-2 text-sm text-center"></p>
+    </div>
+
+    <div id="fileSec" class="hidden max-w-2xl mx-auto bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-bold mb-4">Available Files</h2>
+      <ul id="files" class="space-y-3"></ul>
+    </div>
+
+    <script>
+      const token = localStorage.getItem("token");
+      const role = document.getElementById("role");
+      const fileSec = document.getElementById("fileSec");
+      const files = document.getElementById("files");
+      const upSec = document.getElementById("upSec");
+      const upForm = document.getElementById("upForm");
+      const upMsg = document.getElementById("upMsg");
+      const load = document.getElementById("load");
+
+      if (!token) window.location.href = "/login";
+
+      showLoad();
+      fetch("/verify-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          hideLoad();
+          if (!d.valid) {
+            localStorage.removeItem("token");
+            window.location.href = "/login";
+          }
+          role.textContent = `Logged in as: ${d.email} (${d.role})`;
+          if (d.role === "client") {
+            fileSec.classList.remove("hidden");
+            loadFiles();
+          }
+          if (d.role === "ops") upSec.classList.remove("hidden");
+        })
+        .catch(() => {
+          hideLoad();
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+        });
+
+      function logout() {
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+
+      function showLoad() {
+        load.classList.remove("hidden");
+      }
+
+      function hideLoad() {
+        load.classList.add("hidden");
+      }
+
+      function loadFiles() {
+        showLoad();
+        fetch("/files", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            hideLoad();
+            files.innerHTML = "";
+            data.forEach((f) => {
+              const li = document.createElement("li");
+              li.innerHTML = `
+              <div class="flex justify-between items-center border p-2 rounded">
+                <span>${f.name}</span>
+                <button class="bg-green-500 text-white px-3 py-1 rounded" onclick="getLink('${f.id}')">Download</button>
+              </div>`;
+              files.appendChild(li);
+            });
+          });
+      }
+
+      function secureDl(url, name) {
+        showLoad();
+        fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+          .then((r) => r.blob())
+          .then((b) => {
+            hideLoad();
+            const link = window.URL.createObjectURL(b);
+            const a = document.createElement("a");
+            a.href = link;
+            a.download = name;
+            a.click();
+            window.URL.revokeObjectURL(link);
+          })
+          .catch(() => {
+            hideLoad();
+            alert("Download failed.");
+          });
+      }
+
+      function getLink(id) {
+        showLoad();
+        fetch(`/generate-download/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((r) => r.json())
+          .then((d) => {
+            hideLoad();
+            const li = document.createElement("li");
+            li.innerHTML = `
+              <div class="flex justify-between items-center border p-2 rounded overflow-auto">
+                <p class="m-2">Download ${d.filename} →</p>
+                <button class="text-blue-500 underline" onclick="secureDl('${d.download_link}','${d.filename}')">${d.download_link}</button>
+              </div>`;
+            files.appendChild(li);
+          })
+          .catch(() => {
+            hideLoad();
+            alert("Error generating link.");
+          });
+      }
+
+      upForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(upForm);
+        showLoad();
+        fetch("/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        })
+          .then((r) => r.json())
+          .then((d) => {
+            hideLoad();
+            upMsg.textContent = d.message || "Upload complete!";
+            upMsg.className = "text-green-600 text-center mt-2";
+            upForm.reset();
+          })
+          .catch(() => {
+            hideLoad();
+            upMsg.textContent = "Upload failed.";
+            upMsg.className = "text-red-600 text-center mt-2";
+          });
+      });
+    </script>
+  </body>
+</html>

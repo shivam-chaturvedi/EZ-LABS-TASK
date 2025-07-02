@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded shadow-md w-96">
+      <h2 class="text-2xl font-bold mb-4 text-center">Register</h2>
+
+      <label class="block mb-2 text-sm font-medium text-gray-700">Email</label>
+      <input id="e" type="email" required class="w-full mb-4 px-3 py-2 border rounded" />
+
+      <label class="block mb-2 text-sm font-medium text-gray-700">Password</label>
+      <input id="p" type="password" required class="w-full mb-4 px-3 py-2 border rounded" />
+
+      <label class="block mb-2 text-sm font-medium text-gray-700">Role</label>
+      <select id="r" class="w-full mb-4 px-3 py-2 border rounded">
+        <option value="ops">Operations</option>
+        <option value="client">Client</option>
+      </select>
+
+      <button onclick="getOtp()" class="w-full bg-blue-600 text-white py-2 mb-2 rounded hover:bg-blue-700">Request OTP</button>
+      <div id="l" class="hidden text-center text-sm text-gray-500 mb-2">Loading...</div>
+
+      <div id="otpBox" class="hidden mt-4">
+        <label class="block mb-2 text-sm font-medium text-gray-700">Enter OTP</label>
+        <input id="o" type="text" class="w-full mb-4 px-3 py-2 border rounded" />
+        <button onclick="verifyOtp()" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Verify OTP</button>
+      </div>
+
+      <button id="regBtn" onclick="register()" disabled class="w-full bg-gray-400 text-white py-2 mt-4 rounded cursor-not-allowed">Register</button>
+
+      <div class="text-center text-sm text-gray-500 my-2">OR</div>
+
+      <button onclick="location.href='/login'" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Login</button>
+
+      <p id="msg" class="mt-4 text-sm text-center text-gray-700"></p>
+    </div>
+
+    <script>
+      const e = document.getElementById("e");
+      const p = document.getElementById("p");
+      const r = document.getElementById("r");
+      const o = document.getElementById("o");
+      const otpBox = document.getElementById("otpBox");
+      const regBtn = document.getElementById("regBtn");
+      const msg = document.getElementById("msg");
+      const l = document.getElementById("l");
+
+      function showL() {
+        l.classList.remove("hidden");
+      }
+
+      function hideL() {
+        l.classList.add("hidden");
+      }
+
+      function getOtp() {
+        showL();
+        msg.textContent = "";
+        fetch("/request_otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: e.value, password: p.value, role: r.value }),
+        })
+          .then((res) => res.json())
+          .then((d) => {
+            hideL();
+            if (d.error) {
+              msg.textContent = d.error;
+              msg.className = "text-red-600 text-sm text-center";
+            } else {
+              msg.textContent = d.message;
+              msg.className = "text-green-600 text-sm text-center";
+              otpBox.classList.remove("hidden");
+            }
+          })
+          .catch(() => {
+            hideL();
+            msg.textContent = "Server error.";
+            msg.className = "text-red-600 text-sm text-center";
+          });
+      }
+
+      function verifyOtp() {
+        showL();
+        msg.textContent = "";
+        fetch("/verify_otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: e.value, otp: o.value }),
+        })
+          .then((res) => res.json())
+          .then((d) => {
+            hideL();
+            if (d.error) {
+              msg.textContent = d.error;
+              msg.className = "text-red-600 text-sm text-center";
+            } else {
+              msg.textContent = d.message;
+              msg.className = "text-green-600 text-sm text-center";
+              regBtn.disabled = false;
+              regBtn.classList.remove("bg-gray-400", "cursor-not-allowed");
+              regBtn.classList.add("bg-blue-600", "hover:bg-blue-700");
+            }
+          })
+          .catch(() => {
+            hideL();
+            msg.textContent = "OTP verification failed.";
+            msg.className = "text-red-600 text-sm text-center";
+          });
+      }
+
+      function register() {
+        showL();
+        msg.textContent = "";
+        fetch("/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: e.value, password: p.value, role: r.value }),
+        })
+          .then((res) => res.json())
+          .then((d) => {
+            hideL();
+            if (d.error) {
+              msg.textContent = d.error;
+              msg.className = "text-red-600 text-sm text-center";
+            } else {
+              msg.textContent = "Registration successful!";
+              msg.className = "text-green-600 text-sm text-center";
+              e.value = "";
+              p.value = "";
+              o.value = "";
+              location.href = "/login";
+            }
+          })
+          .catch(() => {
+            hideL();
+            msg.textContent = "Registration failed.";
+            msg.className = "text-red-600 text-sm text-center";
+          });
+      }
+    </script>
+  </body>
+</html>
