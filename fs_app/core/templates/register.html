@@ -21,7 +21,7 @@
         <option value="client">Client</option>
       </select>
 
-      <button onclick="getOtp()" class="w-full bg-blue-600 text-white py-2 mb-2 rounded hover:bg-blue-700">Request OTP</button>
+      <button onclick="getOtp()" class="w-full bg-yellow-600 text-white py-2 mb-2 rounded hover:bg-yellow-700">Request OTP</button>
       <div id="l" class="hidden text-center text-sm text-gray-500 mb-2">Loading...</div>
 
       <div id="otpBox" class="hidden mt-4">
@@ -34,7 +34,7 @@
 
       <div class="text-center text-sm text-gray-500 my-2">OR</div>
 
-      <button onclick="location.href='/login'" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Login</button>
+      <button onclick="location.href='/login'" class="w-full bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700">Login</button>
 
       <p id="msg" class="mt-4 text-sm text-center text-gray-700"></p>
     </div>
@@ -103,7 +103,7 @@
               msg.className = "text-green-600 text-sm text-center";
               regBtn.disabled = false;
               regBtn.classList.remove("bg-gray-400", "cursor-not-allowed");
-              regBtn.classList.add("bg-blue-600", "hover:bg-blue-700");
+              regBtn.classList.add("bg-yellow-600", "hover:bg-yellow-700");
             }
           })
           .catch(() => {
